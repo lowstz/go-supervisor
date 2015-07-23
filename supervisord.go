@@ -4,12 +4,14 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"github.com/Ligustah/xmlrpc"
 	"log"
 	"net"
 	"net/http"
 	"net/url"
 	"reflect"
+	"time"
+
+	"github.com/lowstz/xmlrpc"
 )
 
 var supervisorURL, _ = url.Parse("http://localhost/RPC2")
@@ -407,7 +409,7 @@ func (st *supervisorTransport) RoundTrip(req *http.Request) (*http.Response, err
 //
 // Optionally specify a http.Transport to use, will use default http.Transport if nil.
 // This will also register a
-func New(url string, transport *http.Transport) Supervisor {
+func New(url string, transport *http.Transport, timeout time.Duration) Supervisor {
 	if transport == nil {
 		transport = new(http.Transport)
 	}
@@ -415,6 +417,6 @@ func New(url string, transport *http.Transport) Supervisor {
 	transport.RegisterProtocol("unix", new(supervisorTransport))
 
 	//xmlrpc.NewClient never returns an error
-	client, _ := xmlrpc.NewClient(url, transport)
+	client, _ := xmlrpc.NewClient(url, transport, timeout)
 	return &supervisor{client}
 }
