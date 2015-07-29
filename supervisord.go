@@ -58,18 +58,20 @@ func unmarshalStruct(in xmlrpc.Struct, out interface{}) error {
 }
 
 type State struct {
-	Statecode int64  `xmlrpc:"statecode"`
-	Statename string `xmlrpc:"statename"`
+	StateCode int64  `xmlrpc:"statecode"`
+	StateName string `xmlrpc:"statename"`
 }
 
 type ProcessInfo struct {
 	Name          string `xmlrpc:"name"`
+	Description   string `xmlrpc:"description"`
 	Group         string `xmlrpc:"group"`
 	Start         int64  `xmlrpc:"start"`
 	Stop          int64  `xmlrpc:"stop"`
 	Now           int64  `xmlrpc:"now"`
 	State         int64  `xmlrpc:"state"`
-	Statename     string `xmlrpc:"statename"`
+	StateName     string `xmlrpc:"statename"`
+	Logfile       string `xmlrpc:"logfile"`
 	StdoutLogfile string `xmlrpc:"stdout_logfile"`
 	StderrLogfile string `xmlrpc:"stderr_logfile"`
 	SpawnErr      string `xmlrpc:"spawnerr"`
