@@ -18,6 +18,7 @@ var supervisorURL, _ = url.Parse("http://localhost/RPC2")
 
 func unmarshalStruct(in xmlrpc.Struct, out interface{}) error {
 	t := reflect.TypeOf(out)
+
 	if t.Kind() != reflect.Ptr || t.Elem().Kind() != reflect.Struct {
 		return errors.New("unmarshalStruct: out is not a struct pointer")
 	}
@@ -39,6 +40,14 @@ func unmarshalStruct(in xmlrpc.Struct, out interface{}) error {
 		//log.Printf("looking for field %s", fieldName)
 
 		if value, ok := in[fieldName]; ok {
+			if value == nil {
+				if field.Type.String() == "string" {
+					value = ""
+				}
+				if field.Type.String() == "int64" {
+					value = 0
+				}
+			}
 			vT := reflect.TypeOf(value)
 			if vT.AssignableTo(field.Type) {
 				v.Field(i).Set(reflect.ValueOf(value))
@@ -53,7 +62,6 @@ func unmarshalStruct(in xmlrpc.Struct, out interface{}) error {
 			return fmt.Errorf("unmarshalStruct: field %s couldn't be found in input struct", fieldName)
 		}
 	}
-
 	return nil
 }
 
@@ -134,23 +142,22 @@ func (s *supervisor) startStopProcess(action, name string, wait bool) (success b
 }
 
 func (s *supervisor) multiProcessAction(method string, args interface{}) (info []ProcessInfo, err error) {
-	var values []interface{}
+	var values []xmlrpc.Struct
 	if err = s.rpcClient.Call(fmt.Sprintf("supervisor.%s", method), args, &values); err != nil {
 		return
 	}
 
+	if len(values) < 1 {
+		info = nil
+		return
+	}
 	info = make([]ProcessInfo, len(values))
 
 	for i, v := range values {
-		if strct, ok := v.(xmlrpc.Struct); ok {
-			if err = unmarshalStruct(strct, &info[i]); err != nil {
-				return
-			}
-		} else {
-			return nil, fmt.Errorf("%s: unexpected return data type: %s", method, reflect.TypeOf(v).Name())
+		if err = unmarshalStruct(v, &info[i]); err != nil {
+			return
 		}
 	}
-
 	return
 }
 
@@ -298,7 +305,8 @@ func (s *supervisor) GetProcessInfo(name string) (info ProcessInfo, err error) {
 }
 
 func (s *supervisor) GetAllProcessInfo() ([]ProcessInfo, error) {
-	return s.multiProcessAction("getAllProcessInfo", nil)
+	infos, err := s.multiProcessAction("getAllProcessInfo", nil)
+	return infos, err
 }
 
 func (s *supervisor) StartProcess(name string, wait bool) (bool, error) {
